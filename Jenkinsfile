@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         COMPOSE_CMD = "docker-compose"
-        DB_CONTAINER = "projetdevops-dockerfile_db_1"
     }
 
     stages {
@@ -13,44 +12,60 @@ pipeline {
             }
         }
 
+        stage('Clean Old Containers') {
+            steps {
+                echo "🧹 Suppression des anciens conteneurs..."
+                sh 'docker-compose down -v || true'
+            }
+        }
+
         stage('Build Images') {
             steps {
+                echo "🔨 Build des images Docker..."
                 sh "${COMPOSE_CMD} build"
             }
         }
 
         stage('Deploy Containers') {
             steps {
-                sh "${COMPOSE_CMD} down -v || true"
+                echo "🚀 Lancement des conteneurs..."
                 sh "${COMPOSE_CMD} up -d"
             }
         }
 
-        stage('Check Services') {
+        stage('Check Running Containers') {
             steps {
-                sh "docker ps"
-                sh "curl -s -o /dev/null -w '%{http_code}' http://localhost:5000 || true"
-                sh "curl -s -o /dev/null -w '%{http_code}' http://localhost:8081 || true"
+                echo "🔍 Vérification des conteneurs..."
+                sh "docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'"
             }
         }
 
         stage('Test DB Votes Table') {
             steps {
-                sh '''
-                echo "🔍 Vérification de la table votes..."
-                docker exec -i $DB_CONTAINER \
-                psql -U postgres -d votesdb -c "SELECT count(*) FROM votes;" || exit 1
-                '''
+                script {
+                    echo "🔍 Recherche du conteneur PostgreSQL..."
+                    def dbContainer = sh(
+                        script: "docker ps --filter 'ancestor=postgres:13-alpine' --format '{{.Names}}'",
+                        returnStdout: true
+                    ).trim()
+
+                    if (dbContainer) {
+                        echo "Conteneur PostgreSQL trouvé : ${dbContainer}"
+                        sh "docker exec -i ${dbContainer} psql -U postgres -d votesdb -c 'SELECT count(*) FROM votes;'"
+                    } else {
+                        error "Aucun conteneur PostgreSQL trouvé !"
+                    }
+                }
             }
         }
     }
 
     post {
         success {
-            echo "✅ Déploiement et test réussis !"
+            echo "✅ Déploiement et tests réussis !"
         }
         failure {
-            echo "❌ Échec du déploiement ou du test"
+            echo "❌ Le pipeline a échoué."
         }
     }
 }
