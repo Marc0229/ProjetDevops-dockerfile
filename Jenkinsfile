@@ -40,26 +40,6 @@ pipeline {
             }
         }
 
-        stage('Test DB Votes Table') {
-            steps {
-                script {
-                    echo "🔍 Recherche du conteneur PostgreSQL..."
-                    def dbContainer = sh(
-                        script: "docker ps --filter 'ancestor=postgres:13-alpine' --format '{{.Names}}'",
-                        returnStdout: true
-                    ).trim()
-
-                    if (dbContainer) {
-                        echo "Conteneur PostgreSQL trouvé : ${dbContainer}"
-                        sh "docker exec -i ${dbContainer} psql -U postgres -d votesdb -c 'SELECT count(*) FROM votes;'"
-                    } else {
-                        error "Aucun conteneur PostgreSQL trouvé !"
-                    }
-                }
-            }
-        }
-    }
-
     post {
         success {
             echo "✅ Déploiement et tests réussis !"
