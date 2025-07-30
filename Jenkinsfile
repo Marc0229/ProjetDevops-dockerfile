@@ -35,14 +35,33 @@ pipeline {
 
         stage('Check Running Containers') {
             steps {
-                echo "🔍 Vérification des conteneurs..."
+                echo "🔍 Vérification des conteneurs en cours d'exécution..."
                 sh "docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'"
             }
         }
 
+        stage('Check DB Container') {
+            steps {
+                script {
+                    echo "🔍 Recherche du conteneur PostgreSQL..."
+                    def dbContainer = sh(
+                        script: "docker ps --filter 'ancestor=postgres:13-alpine' --format '{{.Names}}'",
+                        returnStdout: true
+                    ).trim()
+
+                    if (dbContainer) {
+                        echo "✅ Conteneur PostgreSQL trouvé : ${dbContainer}"
+                    } else {
+                        error "❌ Aucun conteneur PostgreSQL trouvé !"
+                    }
+                }
+            }
+        }
+    }
+
     post {
         success {
-            echo "✅ Déploiement et tests réussis !"
+            echo "✅ Déploiement terminé avec succès !"
         }
         failure {
             echo "❌ Le pipeline a échoué."
