@@ -1,0 +1,79 @@
+version: "3.8"
+
+services:
+  # Service Redis (file de messages)
+  redis:
+    image: redis:6-alpine
+    networks:
+      - appnet
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Service PostgreSQL (base de données)
+  db:
+    image: postgres:13-alpine
+    env_file: .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d
+    networks:
+      - appnet
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Service Vote (frontend Flask/Python)
+  vote:
+    build: ./vote
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "${VOTE_SERVICE_PORT}:80"
+    networks:
+      - appnet
+    restart: always
+
+  # Service Worker (.NET background process)
+  worker:
+    build: ./worker
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    networks:
+      - appnet
+    restart: always
+
+  # Service Result (Node.js)
+  result:
+    build: ./result
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${RESULT_SERVICE_PORT}:80"
+    networks:
+      - appnet
+    restart: always
+
+volumes:
+  pgdata:
+
+networks:
+  appnet:
+    driver: bridge
+
