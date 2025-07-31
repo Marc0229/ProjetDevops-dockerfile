@@ -29,14 +29,12 @@ pipeline {
 	stage('SonarQube Analysis') {
 	    steps {
 		withSonarQubeEnv('sonarqube') {
-		    withSonarQubeScanner('sonar-scanner') {
-		        sh '''
-		        sonar-scanner \
-		          -Dsonar.projectKey=projetdevops \
-		          -Dsonar.sources=. \
-		          -Dsonar.host.url=http://localhost:9000
-		        '''
-		    }
+		    sh '''
+		    sonar-scanner \
+		      -Dsonar.projectKey=projetdevops \
+		      -Dsonar.sources=. \
+		      -Dsonar.host.url=http://localhost:9000
+		    '''
 		}
 	    }
 	}
