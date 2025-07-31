@@ -3,8 +3,6 @@ pipeline {
 
     environment {
         COMPOSE_CMD = "docker-compose"
-        DOCKERHUB_USERNAME = credentials('dockerhub-credentials').usr
-        DOCKERHUB_PASSWORD = credentials('dockerhub-credentials').psw
     }
 
     stages {
@@ -30,14 +28,15 @@ pipeline {
 
         stage('Push Docker Images') {
             steps {
-                echo "📤 Connexion et Push vers Docker Hub..."
-                sh '''
-                echo "${DOCKERHUB_PASSWORD}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                    echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
 
-                docker push ${DOCKERHUB_USERNAME}/projetdevops-dockerfile:vote-latest
-                docker push ${DOCKERHUB_USERNAME}/projetdevops-dockerfile:worker-latest
-                docker push ${DOCKERHUB_USERNAME}/projetdevops-dockerfile:result-latest
-                '''
+                    docker push ${DOCKER_USER}/projetdevops-dockerfile:vote-latest
+                    docker push ${DOCKER_USER}/projetdevops-dockerfile:worker-latest
+                    docker push ${DOCKER_USER}/projetdevops-dockerfile:result-latest
+                    '''
+                }
             }
         }
 
@@ -76,14 +75,14 @@ pipeline {
 
     post {
         success {
-            emailext (
+            emailext(
                 subject: "✅ Succès du Pipeline ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                 body: "Le pipeline a réussi !\nVoir les détails : ${env.BUILD_URL}",
                 to: "marcorelabdel@gmail.com"
             )
         }
         failure {
-            emailext (
+            emailext(
                 subject: "❌ Échec du Pipeline ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                 body: "Le pipeline a échoué.\nVoir les logs : ${env.BUILD_URL}",
                 to: "marcorelabdel@gmail.com"
@@ -91,4 +90,5 @@ pipeline {
         }
     }
 }
+
 
