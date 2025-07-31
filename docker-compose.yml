@@ -32,6 +32,7 @@ services:
   # Service Vote (frontend Flask/Python)
   vote:
     build: ./vote
+    image: marc0229/projetdevops-dockerfile:vote-latest
     env_file: .env
     depends_on:
       redis:
@@ -45,6 +46,7 @@ services:
   # Service Worker (.NET background process)
   worker:
     build: ./worker
+    image: marc0229/projetdevops-dockerfile:worker-latest
     env_file: .env
     environment:
       POSTGRES_HOST: db
@@ -60,6 +62,7 @@ services:
   # Service Result (Node.js)
   result:
     build: ./result
+    image: marc0229/projetdevops-dockerfile:result-latest
     env_file: .env
     depends_on:
       db:

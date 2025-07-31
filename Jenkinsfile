@@ -25,7 +25,20 @@ pipeline {
                 sh "${COMPOSE_CMD} build"
             }
         }
-
+	
+	stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('sonarqube') {
+                    sh '''
+                    sonar-scanner \
+                      -Dsonar.projectKey=projetdevops \
+                      -Dsonar.sources=. \
+                      -Dsonar.host.url=http://localhost:9000
+                    '''
+                }
+            }
+        }
+	
         stage('Push Docker Images') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
