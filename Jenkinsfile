@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         COMPOSE_CMD = "docker-compose"
+        SONAR_HOST = "http://192.168.1.12:9000"
     }
 
     stages {
@@ -25,21 +26,20 @@ pipeline {
                 sh "${COMPOSE_CMD} build"
             }
         }
-	
-	stage('SonarQube Analysis') {
-	    steps {
-		withSonarQubeEnv('sonarqube') {
-		    sh '''
-		    sonar-scanner \
-		      -Dsonar.projectKey=projetdevops \
-		      -Dsonar.sources=. \
-		      -Dsonar.host.url=http://localhost:9000
-		    '''
-		}
-	    }
-	}
 
-	
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('sonarqube') {
+                    sh """
+                    sonar-scanner \
+                      -Dsonar.projectKey=projetdevops \
+                      -Dsonar.sources=. \
+                      -Dsonar.host.url=${SONAR_HOST}
+                    """
+                }
+            }
+        }
+
         stage('Push Docker Images') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
@@ -104,5 +104,4 @@ pipeline {
         }
     }
 }
-
 
