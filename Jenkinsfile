@@ -3,6 +3,8 @@ pipeline {
 
     environment {
         COMPOSE_CMD = "docker-compose"
+        DOCKERHUB_USERNAME = credentials('dockerhub-credentials').usr
+        DOCKERHUB_PASSWORD = credentials('dockerhub-credentials').psw
     }
 
     stages {
@@ -23,6 +25,19 @@ pipeline {
             steps {
                 echo "🔨 Build des images Docker..."
                 sh "${COMPOSE_CMD} build"
+            }
+        }
+
+        stage('Push Docker Images') {
+            steps {
+                echo "📤 Connexion et Push vers Docker Hub..."
+                sh '''
+                echo "${DOCKERHUB_PASSWORD}" | docker login -u "${DOCKERHUB_USERNAME}" --password-stdin
+
+                docker push ${DOCKERHUB_USERNAME}/projetdevops-dockerfile:vote-latest
+                docker push ${DOCKERHUB_USERNAME}/projetdevops-dockerfile:worker-latest
+                docker push ${DOCKERHUB_USERNAME}/projetdevops-dockerfile:result-latest
+                '''
             }
         }
 
@@ -61,10 +76,18 @@ pipeline {
 
     post {
         success {
-            echo "✅ Déploiement terminé avec succès !"
+            emailext (
+                subject: "✅ Succès du Pipeline ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Le pipeline a réussi !\nVoir les détails : ${env.BUILD_URL}",
+                to: "marcorelabdel@gmail.com"
+            )
         }
         failure {
-            echo "❌ Le pipeline a échoué."
+            emailext (
+                subject: "❌ Échec du Pipeline ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Le pipeline a échoué.\nVoir les logs : ${env.BUILD_URL}",
+                to: "marcorelabdel@gmail.com"
+            )
         }
     }
 }
