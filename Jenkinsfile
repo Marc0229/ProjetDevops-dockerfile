@@ -27,17 +27,20 @@ pipeline {
         }
 	
 	stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('sonarqube') {
-                    sh '''
-                    sonar-scanner \
-                      -Dsonar.projectKey=projetdevops \
-                      -Dsonar.sources=. \
-                      -Dsonar.host.url=http://localhost:9000
-                    '''
-                }
-            }
-        }
+	    steps {
+		withSonarQubeEnv('sonarqube') {
+		    withSonarQubeScanner('sonar-scanner') {
+		        sh '''
+		        sonar-scanner \
+		          -Dsonar.projectKey=projetdevops \
+		          -Dsonar.sources=. \
+		          -Dsonar.host.url=http://localhost:9000
+		        '''
+		    }
+		}
+	    }
+	}
+
 	
         stage('Push Docker Images') {
             steps {
